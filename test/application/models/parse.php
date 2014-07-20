@@ -181,7 +181,7 @@ class Parse extends CI_Model {
           }     
         } 
         else {
-          $fields['file_format_error'] = "Line of report expected blank. See case 11 of of parseSensorReports().";
+          $fields['file_format_error'] = "Line of report expected blank. See 'case 11:' of of parseSensorReports().";
         }
       } 
     }

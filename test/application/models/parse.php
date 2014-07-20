@@ -251,74 +251,11 @@ class Parse extends CI_Model {
 
   }
 
-  function doDatabaseActions($data_fields)
-  {
-    $event_type = $data_fields['event_type'];
-    
-    switch ($event_type)
-    {
-      case 'sensor registration':
-        
-        $regdate  = $data_fields['event_datetime'];
-        $sensorid = $data_fields['sensor_id'];     
-        $nest = $this->_getNestByDateSensorId($regdate, $sensorid);
-        
-        if ($nest and $nest->registration_date < $regdate) {
-        
-          /* It's an update to a nest, registered earlier today. Update the nest, then insert the event, 
-            then update the sensor and comm unit but only if they exist, else insert a new record*/
-                            
-          // update nest
-          $data_fields['nest_id'] = $nest->nest_id;        
-          $this->_updateNest($data_fields);
-          
-          // insert event
-          $this->_insertEvent_SensorRegistration($data_fields);
-          
-          // update sensor if exists, else insert
-          $sensor_exists = $this->_sensorExists($data_fields);
-          $sensor_exists ? $this->_updateSensor($data_fields) : $this->_insertSensor($data_fields);   
-
-          // update comm if exists, else insert
-          $comm_exists = $this->_commExists($data_fields);
-          $comm_exists ? $this->_updateComm($data_fields) : $this->_insertComm($data_fields);   
-
-        } 
-        else {
-        
-          /* This is a new nest, which means it's a new combination of sensor_id and  event_datetime.
-          Insert the new nest, then the event, then update the sensor if it exists, else insert it,
-          and then update the comm if it exists, else insert it */
-          
-          $data_fields['nest_id'] = $this->_insertNest($data_fields);
-                      
-          // insert event
-          $this->_insertEvent_SensorRegistration($data_fields);
-          
-          // insert sensor, if it doesn't exist
-          $sensor_exists = $this->_sensorExists($data_fields);
-          $sensor_exists ? $this->_updateSensor($data_fields) : $this->_insertSensor($data_fields);
-               
-          // insert comm, if it doesn't exist 
-          $comm_exists = $this->_commExists($data_fields);
-          $comm_exists ? $this->_updateComm($data_fields) : $this->_insertComm($data_fields);   
-        }    
-        break;
-      
-      case 'sensor report':
-  
-        break;
-      
-      default:
-        break;
-    }
-  }
-
 
   
   // GETS
   
-  function _getNestByDateSensorId($regdate, $sensorid)
+  function getNestByDateSensorId($regdate, $sensorid)
   {
     $id = $this->_createLongNestId($regdate, $sensorid);
     $this->db->where('nest_id_long', $id);
@@ -332,7 +269,7 @@ class Parse extends CI_Model {
 
   // INSERTS
   
-  function _insertNest($data_fields)
+  function insertNest($data_fields)
   {
     $regdate  = $data_fields['event_datetime'];
     $sensorid = $data_fields['sensor_id'];  
@@ -352,7 +289,7 @@ class Parse extends CI_Model {
     return $this->_doInsertAutoId('tblNests', $nest);		
   }
   
-  function _insertEvent_SensorRegistration($data_fields)
+  function insertEvent_SensorRegistration($data_fields)
   {
     $event['event_type']      = $data_fields['event_type'];
     $event['event_datetime']  = $data_fields['event_datetime'];
@@ -364,7 +301,7 @@ class Parse extends CI_Model {
     return $this->_doInsertAutoId('tblEvents', $event);
   }
   
-  function _insertSensor($data_fields)
+  function insertSensor($data_fields)
   {
     $sensor['sensor_id']          = $data_fields['sensor_id'];
     $sensor['nest_id']            = $data_fields['nest_id'];
@@ -373,7 +310,7 @@ class Parse extends CI_Model {
     return $this->_doInsert('tblSensors', $sensor);		
   }
   
-  function _insertComm($data_fields)
+  function insertComm($data_fields)
   {
     $commtype = ($data_fields['event_type'] == 'report') ? 'tower' : 'hand-held';
     
@@ -409,7 +346,7 @@ class Parse extends CI_Model {
 
   // UPDATES
   
-  function _updateNest($data_fields)
+  function updateNest($data_fields)
   {
     $id = $data_fields['nest_id'];
     
@@ -427,7 +364,7 @@ class Parse extends CI_Model {
   	}			
   }
  
-  function _updateSensor($data_fields)
+  function updateSensor($data_fields)
   {
     $sensor['nest_id']          = $data_fields['nest_id'];
     $sensor['lastuse_datetime'] = $data_fields['event_datetime'];
@@ -440,7 +377,7 @@ class Parse extends CI_Model {
   	}			
   }
        
-  function _updateComm($data_fields)
+  function updateComm($data_fields)
   {
     $sensor['nest_id']          = $data_fields['nest_id'];
     $sensor['lastuse_datetime'] = $data_fields['event_datetime'];
@@ -453,7 +390,7 @@ class Parse extends CI_Model {
   	}			
   }
        
-  function _sensorExists($data_fields)
+  function sensorExists($data_fields)
   {
     $table = 'tblSensors';
     $key   = 'sensor_id';
@@ -462,7 +399,7 @@ class Parse extends CI_Model {
     return $this->_recordExists($table,$key,$id);
   }
   
-  function _commExists($data_fields)
+  function commExists($data_fields)
   {
     $table = 'tblCommunicators';
     $key   = 'comm_id';

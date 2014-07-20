@@ -32,9 +32,9 @@ $config['base_url']		= 'http://'.$config['domain'].'/';
 
 // Logs & Archives
 $config['parser_logs_dir']        = realpath(BASEPATH . '../logs/parser');
-$config['reports_dir']            = realpath(BASEPATH . '../../reports');
-$config['processed_reports_dir']  = realpath(BASEPATH . '../../reports_processed');
-$config['malformed_reports_dir']  = realpath(BASEPATH . '../../reports_malformed');
+$config['reports_dir']            = realpath(BASEPATH . '../../../reports');
+$config['processed_reports_dir']  = realpath(BASEPATH . '../../../reports_processed');
+$config['malformed_reports_dir']  = realpath(BASEPATH . '../../../reports_malformed');
 
 
 

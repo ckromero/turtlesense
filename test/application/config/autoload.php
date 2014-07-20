@@ -80,7 +80,7 @@ $autoload['helper'] = array('file');
 |
 */
 
-$autoload['config'] = array('sitewide');
+$autoload['config'] = array();
 
 
 /*

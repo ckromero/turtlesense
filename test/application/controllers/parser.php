@@ -88,7 +88,7 @@ class Parser extends CI_Controller {
         
         $regdate  = $data_fields['event_datetime'];
         $sensorid = $data_fields['sensor_id'];     
-        $nest = $this->parsemodel->getNestByDateSensorId($regdate, $sensorid);
+        $nest     = $this->parsemodel->getNestByDateSensorId($regdate, $sensorid);
         
         if ($nest and $nest->registration_date < $regdate) {
         
@@ -120,15 +120,15 @@ class Parser extends CI_Controller {
           $data_fields['nest_id'] = $this->parsemodel->insertNest($data_fields);
                       
           // insert event
-          $this->insertEvent_SensorRegistration($data_fields);
+          $this->parsemodel->insertEvent_SensorRegistration($data_fields);
           
           // insert sensor, if it doesn't exist
-          $sensor_exists = $this->sensorExists($data_fields);
-          $sensor_exists ? $this->updateSensor($data_fields) : $this->insertSensor($data_fields);
+          $sensor_exists = $this->parsemodel->sensorExists($data_fields);
+          $sensor_exists ? $this->parsemodel->updateSensor($data_fields) : $this->parsemodel->insertSensor($data_fields);
                
           // insert comm, if it doesn't exist 
-          $comm_exists = $this->commExists($data_fields);
-          $comm_exists ? $this->updateComm($data_fields) : $this->insertComm($data_fields);   
+          $comm_exists = $this->parsemodel->commExists($data_fields);
+          $comm_exists ? $this->parsemodel->updateComm($data_fields) : $this->parsemodel->insertComm($data_fields);   
         }    
         break;
       

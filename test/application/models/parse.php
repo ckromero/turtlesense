@@ -10,7 +10,7 @@ class Parse extends CI_Model {
 	}			
 	
 	function getFiles() {
-		return $files = get_filenames($this->config->item('reports_dir'), TRUE);
+		return $files = get_filenames($this->config->item('reports_ts_dir'), TRUE);
 	}
 			
   function parse_SensorRegistration($array = array())
@@ -417,7 +417,7 @@ class Parse extends CI_Model {
 
 		$sourceFile     = $data_fields->file_name;	
     $targetFileName = basename($data_fields->file_name);
-		$targetDirPath  = $this->config->item('processed_reports_dir');
+		$targetDirPath  = $this->config->item('reports_processed_dir');
 		$targetFile     = $targetDirPath.'/'.$targetFileName;
 				
 		if(file_exists($sourceFile)){
@@ -432,7 +432,7 @@ class Parse extends CI_Model {
   
   	$sourceFile     = $data_fields->file_name;	
     $targetFileName = basename($data_fields->file_name);
-  	$targetDirPath  = $this->config->item('malformed_reports_dir');
+  	$targetDirPath  = $this->config->item('reports_malformed_dir');
   	$targetFile     = $targetDirPath.'/'.$targetFileName;
   			
   	if(file_exists($sourceFile)){
@@ -475,7 +475,7 @@ class Parse extends CI_Model {
     if (isset($data_fields['file_format_error'])) { // abstract this to error_type, if other types are required
     
       // write to log - as of now, on one type of error - file_format_error. All should be aborted.
-      $this->logmodel->writeToApplicationLog('ERROR - '.$data_fields['file_format_error'].' Moving '.$filename .' to '.$this->config->item('malformed_reports_dir').'. Aborting process.');	
+      $this->logmodel->writeToApplicationLog('ERROR - '.$data_fields['file_format_error'].' Moving '.$filename .' to '.$this->config->item('reports_malformed_dir').'. Aborting process.');	
     }
     // send me email once a day! using a cookie
   }

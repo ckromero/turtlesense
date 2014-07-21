@@ -10,7 +10,7 @@ class Log extends CI_Model {
 	
 	function writeToApplicationLog($msg='') 
 	{
-		$filepath = $this->config->item('parser_logs_dir').'/'.date('Y-m-d').'.php';
+		$filepath = $this->config->item('logs_parser_dir').'/'.date('Y-m-d').'.php';
 				
 		$message  = '';
 

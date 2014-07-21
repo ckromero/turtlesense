@@ -31,10 +31,10 @@ $config['domain'] 		= 'localhost/ts';
 $config['base_url']		= 'http://'.$config['domain'].'/';
 
 // Logs & Archives
-$config['parser_logs_dir']        = realpath(BASEPATH . '../logs/parser');
-$config['reports_dir']            = realpath(BASEPATH . '../../../reports_ts');
-$config['processed_reports_dir']  = realpath(BASEPATH . '../../../reports_processed');
-$config['malformed_reports_dir']  = realpath(BASEPATH . '../../../reports_malformed');
+$config['logs_parser_dir']        = realpath(BASEPATH . '../logs/parser');
+$config['reports_ts_dir']         = realpath(BASEPATH . '../../../reports_ts');
+$config['reports_processed_dir']  = realpath(BASEPATH . '../../../reports_processed');
+$config['reports_malformed_dir']  = realpath(BASEPATH . '../../../reports_malformed');
 
 
 

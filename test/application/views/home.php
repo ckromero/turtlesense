@@ -10,13 +10,14 @@
 </p>
 <h3>PART 1: Registration Parser</h3>
 
-<p>Includes only the database tables and fields necessary to process registration logs.</p>
+<p>Uses database name "test". Includes only the tables and fields necessary to process registration logs.</p>
 
-<p>To test the registration parser, place one or more registration log files (or anything else) into the reports folder and click the "parse now" button. It will parse each file in the reports folder, make all database entries and/or updates, move each file into an archive folder (processed or malformed), and make a detailed log entry for each file. You should also see a list of processed file names in your browser. If no file names display, no files were processed. To test again, make sure files exist in the reports folder and simply refresh the page. No need to return to home and click the button.</p>
+<p>Each time you click the "Parse Now" button on this page or refresh the resulting page at <strong>http://root.turtlesense.org/test/parser</strong>, the parser will begin again.</p>
 
-<p>After each test, you might find it helpful to empty all records from all tables. <br>Here's the SQL: <span style="color:blue;">truncate tblNests; truncate tblEvents; truncate tblSensors; truncate tblCommunicators; </span> Be sure you're the only one testing! 
+<p>To test the registration parser,place one or more registration log files into <strong>reports_ts</strong> and click "Parse Now" button. It will parse each file in reports_ts, make all database entries/updates, move each file into either reports_processed or reports_malformed, and make a log entry for each file at <strong><?=$this->config->item('parser_logs_dir')?></strong> (filed by date). When the parser completes, a list of processed and malformed file names display in your browser window. If no names display, no files were processed. To test again, make sure files exist in reports_ts and simply refresh the page. No need to return home and click the button.</p>
 
-<p>The parser logs are located at: <strong>www/ts/logs/parser/</strong></p>
+<p>After each test, you might find it helpful to empty all records from all tables. <br>Here's the SQL: <span style="color:blue;">truncate tblNests; truncate tblEvents; truncate tblSensors; truncate tblCommunicators; </span> Be sure you're the only one testing, or you'll confuse the other tester for sure.
+
 
 <p><a href="<?= $this->config->item('base_url')?>parser"><input type="button" value="Parse Now"></a></p>
 

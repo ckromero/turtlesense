@@ -27,7 +27,7 @@ $theme = 'carapace';
 | path to your installation.
 |
 */
-$config['domain'] 		= 'turtlesense.org/ts/test';
+$config['domain'] 		= 'root.turtlesense.org/test';
 $config['base_url']		= 'http://'.$config['domain'].'/';
 
 // Logs & Archives

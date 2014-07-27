@@ -36,12 +36,17 @@ class Parser extends CI_Controller {
 
     foreach ($files as $file_name) {                
 
-      $txt_file = trim(file_get_contents($file_name));
-      
+      $txt_file = trim(file_get_contents($file_name));      
       $array_of_lines = explode("\r", $txt_file);
+      
+      if ( count($array_of_lines) == 1) {  
+        // file uses newline character, not return
+        $array_of_lines = explode("\n", $txt_file);
+      } 
+
       $array_of_lines = array_map('strtolower', $array_of_lines);              
       $array_of_lines = array_map('trim', $array_of_lines);
-      
+    
       // log title determines parser
       $abbreviated_logtitle = substr($array_of_lines[0], 0, 6);
 

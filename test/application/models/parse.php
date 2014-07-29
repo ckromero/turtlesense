@@ -10,59 +10,61 @@ class Parse extends CI_Model {
 	}			
 	
 	function getFiles() {
-		return $files = get_filenames($this->config->item('reports_ts_dir'), TRUE);
+	
+	  $files = get_filenames($this->config->item('reports_ts_dir'), TRUE);	  
+		return $files;
 	}
 			
-  function parse_SensorRegistration($array = array())
+  function parse_SensorRegistration($logEntry_lines = array())
   {              
     $fields = array();
     
-    foreach ($array as $key => $value) {
+    foreach ($logEntry_lines as $label => $value) {
       
-      switch ($key) {
+      switch ($label) {
         
         case 0:
-        //  [0]=> string(50) "registration event date/time: 2014/06/30, 11:04:42" 
-        $fields['event_type'] = 'sensor registration';
+        //  [0]=> string(50) "REGISTRATION EVENT Date/Time: 2014/06/30, 11:04:42" 
+        $fields['event_type'] = 'nest registration';
         $string = str_replace(': ', '::', $value);
         strpos($string, '::') !== false ? $data_array = explode("::", $string) : $this->_setErrorMsg('date',$fields);      
-        strpos($data_array[0], 'date/time') !== false ? '' : $this->_setErrorMsg('date',$fields);          
+        strpos($data_array[0], 'Date/Time') !== false ? '' : $this->_setErrorMsg('date',$fields);          
         $data_array[1] = str_replace(',', '', $data_array[1]); // strip out comma
         preg_match('/^\d{4}\/\d{2}\/\d{2}\s\d{2}\:\d{2}\:\d{2}/', $data_array[1]) ? $fields['event_datetime'] = $data_array[1] : $this->_setErrorMsg('date',$fields);
         break;
         
         case 1:
-        //  [1]=> string(18) "sensor id#: aa0003"
+        //  [1]=> string(18) "Sensor ID#: aa0003"
         strpos($value, ':') !== false ? $data_array = explode(": ", $value) : $this->_setErrorMsg('sensor',$fields);      
-        strpos($data_array[0], 'sensor') !== false ? '' : $this->_setErrorMsg('sensor',$fields);
+        strpos($data_array[0], 'Sensor') !== false ? '' : $this->_setErrorMsg('sensor',$fields);
         preg_match('/^\w{2}\d{4}/', $data_array[1]) ? $fields['sensor_id'] = $data_array[1] : $this->_setErrorMsg('sensor',$fields);
         break;
         
         case 2:
-        //  [2]=> string(39) "registration communicator id#: h-aa0005"
+        //  [2]=> string(39) "Registration Communicator ID#: h-aa0005"
         strpos($value, ':') !== false ? $data_array = explode(": ", $value) : $this->_setErrorMsg('comm',$fields);      
-        strpos($data_array[0], 'communicator') !== false ? '' : $fields['file_format_error'] = $this->_setErrorMsg('comm',$fields);
+        strpos($data_array[0], 'Communicator') !== false ? '' : $fields['file_format_error'] = $this->_setErrorMsg('comm',$fields);
         preg_match('/^\w-\w{2}\d{4}/', $data_array[1]) ? $fields['comm_id'] = $data_array[1] : $this->_setErrorMsg('comm',$fields);
         break;
         
         case 3:
-        //  [3]=> string(42) "nest gps location: 3514.7907n, 07531.4702w" 
+        //  [3]=> string(42) "Nest GPS Location: 3514.7907n, 07531.4702w" 
         strpos($value, ':') !== false ? $data_array = explode(": ", $value) : $this->_setErrorMsg('gps',$fields);             
-        strpos($data_array[0], 'gps') !== false ? '' : $this->_setErrorMsg('gps',$fields);        
+        strpos($data_array[0], 'GPS') !== false ? '' : $this->_setErrorMsg('gps',$fields);        
         strpos($data_array[1], ', ') !== false ? $data_array = explode(', ', $data_array[1]) : $this->_setErrorMsg('gps',$fields);             
         preg_match('/^\d{4,5}.\d{4}\w/', $data_array[0]) ? $fields['nest_latitude']  = $data_array[0] : $this->_setErrorMsg('gps',$fields);
         preg_match('/^\d{4,5}.\d{4}\w/', $data_array[1]) ? $fields['nest_longitude'] = $data_array[1] : $this->_setErrorMsg('gps',$fields);
         break;
         
         case 4:
-        //  [4]=> string(19) "battery level: 022f"
+        //  [4]=> string(19) "Battery level: 022f"
         strpos($value, ':') !== false ? $data_array = explode(": ", $value) : $this->_setErrorMsg('battery',$fields);      
-        strpos($data_array[0], 'battery') !== false ? '' : $this->_setErrorMsg('battery',$fields);
-        preg_match('/^[0-9a-f]{4}/', $data_array[1]) ? $fields['battery_level'] = $data_array[1] : $this->_setErrorMsg('battery',$fields);
+        strpos($data_array[0], 'Battery') !== false ? '' : $this->_setErrorMsg('battery',$fields);
+        preg_match('/^[0-9A-F]{4}/', $data_array[1]) ? $fields['battery_level'] = $data_array[1] : $this->_setErrorMsg('battery',$fields);
         break;
       } 
     }
-    //echo '<pre>';print_r($fields);  
+    //echo '<pre>';print_r($fields);exit;
     return $fields; 
   }
   
@@ -71,9 +73,9 @@ class Parse extends CI_Model {
   {
     $fields = array();
     
-    foreach ($array as $key => $value) {
+    foreach ($array as $label => $value) {
       
-      switch ($key) {
+      switch ($label) {
         
         case 0:
         //  [0]=> string(38) "report: 2014-06-30_aa0003_r-005-01.txt"
@@ -205,9 +207,9 @@ class Parse extends CI_Model {
       $fields['file_format_error'] = "Expected column labels for record set.";  
     }       
   
-    foreach ($record_set as $key => $value) {
+    foreach ($record_set as $label => $value) {
           
-      if ($key > 0 and $value != '') {
+      if ($label > 0 and $value != '') {
         
         $report_array = explode(",", $value); 
         $report_array = array_map('trim', $report_array);
@@ -233,14 +235,14 @@ class Parse extends CI_Model {
           preg_match('/^[0-9a-f]{4}/', $report_array[15]) ? $fields['bin_i'] = $report_array[15] : $fields['file_format_error'] = "Record value for BIN I failed pattern match.";
           preg_match('/^[0-9a-f]{4}/', $report_array[16]) ? $fields['bin_j'] = $report_array[16] : $fields['file_format_error'] = "Record value for BIN J failed pattern match.";
          
-          $reports[$key] = $fields;       
+          $reports[$label] = $fields;       
         } 
         else {
           
           // store as a comm message if not at end of file
           $test_string = substr($report_array[0], 0, 5);
           if ($test_string != '--end' and $test_string != 'turtl') {
-            $reports['devicemsg-'.$key] = $report_array[0];
+            $reports['devicemsg-'.$label] = $report_array[0];
             //$this->logmodel->writeToApplicationLog("You've got a message!\n".$report_array[0]);
           }
         }        
@@ -248,25 +250,9 @@ class Parse extends CI_Model {
     }
     //echo '<pre>';print_r($fields);  
     return $reports;
-
   }
 
-
   
-  // GETS
-  
-  function getNestByDateSensorId($regdate, $sensorid)
-  {
-    $id = $this->_createLongNestId($regdate, $sensorid);
-    $this->db->where('nest_id_long', $id);
-    
-    $query  = $this->db->get('tblNests');
-    $result = $query->row();
-    
-    return $result;
-  }
-  
-
   // INSERTS
   
   function insertNest($data_fields)
@@ -277,7 +263,7 @@ class Parse extends CI_Model {
     $longNestId = $this->_createLongNestId($regdate, $sensorid);
  
     $nest['nest_id_long']       = $longNestId;
-    $nest['registration_date']  = $data_fields['event_datetime'];
+    $nest['registered_datetime']  = $data_fields['event_datetime'];
     $nest['sensor_id']          = $data_fields['sensor_id'];
     $nest['sensor_id']          = $data_fields['sensor_id'];
     $nest['comm_id']            = $data_fields['comm_id'];
@@ -286,7 +272,7 @@ class Parse extends CI_Model {
     $nest['nest_longitude']     = $data_fields['nest_longitude'];
     $nest['active']             = 1;
   
-    return $this->_doInsertAutoId('tblNests', $nest);		
+    return $this->_doInsertAutoId('NESTS', $nest);		
   }
   
   function insertEvent_SensorRegistration($data_fields)
@@ -298,16 +284,17 @@ class Parse extends CI_Model {
     $event['comm_id']         = $data_fields['comm_id'];
     $event['battery_level']   = $data_fields['battery_level'];
   
-    return $this->_doInsertAutoId('tblEvents', $event);
+    return $this->_doInsertAutoId('EVENTS', $event);
   }
   
   function insertSensor($data_fields)
   {
     $sensor['sensor_id']          = $data_fields['sensor_id'];
     $sensor['nest_id']            = $data_fields['nest_id'];
-    $sensor['firstuse_datetime']  = $data_fields['event_datetime'];
+    $sensor['sensor_firstuse']    = $data_fields['event_datetime'];
+    $sensor['sensor_lastuse']     = $data_fields['event_datetime'];
       
-    return $this->_doInsert('tblSensors', $sensor);		
+    return $this->_doInsert('SENSORS', $sensor);		
   }
   
   function insertComm($data_fields)
@@ -317,9 +304,10 @@ class Parse extends CI_Model {
     $comm['comm_id']           = $data_fields['comm_id'];
     $comm['nest_id']           = $data_fields['nest_id'];
     $comm['comm_type']         = $commtype;
-    $comm['firstuse_datetime'] = $data_fields['event_datetime'];
+    $comm['comm_firstuse']     = $data_fields['event_datetime'];
+    $comm['comm_lastuse']      = $data_fields['event_datetime'];
       
-    return $this->_doInsert('tblCommunicators', $comm);		
+    return $this->_doInsert('COMMUNICATORS', $comm);		
   }
   
   function _doInsert($table, $values)
@@ -345,31 +333,17 @@ class Parse extends CI_Model {
 
 
   // UPDATES
-  
-  function updateNest($data_fields)
-  {
-    $id = $data_fields['nest_id'];
-    
-    $nest['comm_id']            = $data_fields['comm_id'];
-    $nest['registration_date']  = $data_fields['event_datetime'];
-    $nest['nest_latitude']      = $data_fields['nest_latitude'];
-    $nest['nest_longitude']    = $data_fields['nest_longitude'];
-     
-    $this->db->where('nest_id', $id);
-    $this->db->update('tblNests', $nest);
-  	if ($this->db->affected_rows() == 1) {
-  		 return true; 
-  	} else {
-  		return false;
-  	}			
-  }
- 
+   
   function updateSensor($data_fields)
   {
+    $sensorid = $data_fields['sensor_id'];
+    
     $sensor['nest_id']          = $data_fields['nest_id'];
-    $sensor['lastuse_datetime'] = $data_fields['event_datetime'];
-
-    $this->db->update('tblSensors', $sensor);
+    $sensor['sensor_inuse']     = 1;
+    $sensor['sensor_lastuse']   = $data_fields['event_datetime'];
+    
+    $this->db->where('sensor_id', $sensorid);
+    $this->db->update('SENSORS', $sensor);
   	if ($this->db->affected_rows() == 1) {
   		 return true; 
   	} else {
@@ -379,10 +353,14 @@ class Parse extends CI_Model {
        
   function updateComm($data_fields)
   {
-    $sensor['nest_id']          = $data_fields['nest_id'];
-    $sensor['lastuse_datetime'] = $data_fields['event_datetime'];
+    $commid = $data_fields['comm_id'];
 
-    $this->db->update('tblCommunicators', $sensor);
+    $comm['nest_id']          = $data_fields['nest_id'];
+    $comm['comm_inuse']       = 1;
+    $comm['comm_lastuse']     = $data_fields['event_datetime'];
+
+    $this->db->where('comm_id', $commid);
+    $this->db->update('COMMUNICATORS', $comm);
   	if ($this->db->affected_rows() == 1) {
   		 return true; 
   	} else {
@@ -390,95 +368,70 @@ class Parse extends CI_Model {
   	}			
   }
        
+  function eventExists($data_fields)
+  {
+    $this->db->where('sensor_id', $data_fields['sensor_id']);
+    $this->db->where('event_datetime' ,$data_fields['event_datetime']);
+    $query = $this->db->get('EVENTS');
+    
+    $result_array = $query->row();
+    return count($result_array);
+  }
+  
   function sensorExists($data_fields)
   {
-    $table = 'tblSensors';
-    $key   = 'sensor_id';
+    $table = 'SENSORS';
+    $label   = 'sensor_id';
     $id    = $data_fields['sensor_id'];
 
-    return $this->_recordExists($table,$key,$id);
+    return $this->_recordExists($table,$label,$id);
   }
   
   function commExists($data_fields)
   {
-    $table = 'tblCommunicators';
-    $key   = 'comm_id';
+    $table = 'COMMUNICATORS';
+    $label   = 'comm_id';
     $id    = $data_fields['comm_id'];
 
-    return $this->_recordExists($table,$key,$id);
+    return $this->_recordExists($table,$label,$id);
   }
   
 
   // HELPERS
-  
-	function archiveGoodReport($data_fields)
-	{			
-		$data_fields = (object) $data_fields;		
-
-		$sourceFile     = $data_fields->file_name;	
-    $targetFileName = basename($data_fields->file_name);
-		$targetDirPath  = $this->config->item('reports_processed_dir');
-		$targetFile     = $targetDirPath.'/'.$targetFileName;
-				
-		if(file_exists($sourceFile)){
-			rename($sourceFile,$targetFile);
-		}
-		echo $targetFileName . ' was successful and archived.<br>';
-	}
-
-  function archiveBadReport($data_fields)
+    			
+  function moveMalformedLogFile($data_fields)
   {
-  	$data_fields = (object) $data_fields;		
-  
-  	$sourceFile     = $data_fields->file_name;	
-    $targetFileName = basename($data_fields->file_name);
-  	$targetDirPath  = $this->config->item('reports_malformed_dir');
-  	$targetFile     = $targetDirPath.'/'.$targetFileName;
-  			
+    $targetFileName = basename($data_fields['file_name']);
+    $sourceFile     = $data_fields['file_name'];
+
+    $targetDirPath  = $this->config->item('reports_malformed_dir');  
+    $targetFile     = $targetDirPath.'/'.$targetFileName;
+    
   	if(file_exists($sourceFile)){
   		rename($sourceFile,$targetFile);
   	}
-  	echo $targetFileName . ' was moved to the problems directory.<br>';
   }
-  			
-  function _createLongNestId($date, $sensorid)
+  
+  function _createLongNestId($datetime, $sensorid)
   {
-    preg_match('/\d{4}\/\d{2}\/\d{2}/', $date, $match);
-    $install_date = $match[0];
-    $install_date = str_replace('/', '-', $install_date);
+    // preg_match('/\d{4}\/\d{2}\/\d{2}/', $date, $match);
+    // $install_date = $match[0];
+    $install_date = str_replace('/', '-', $datetime);
+    $install_date = str_replace(' ', '_', $install_date);
+    $install_date = str_replace(':', '-', $install_date);
     $nest_id_long = $install_date . '_' . $sensorid; 
   
     return $nest_id_long;
   }
  
-  function _recordExists($table,$key,$id)
+  function _recordExists($table,$label,$id)
   {
-    $this->db->where($key ,$id);
+    $this->db->where($label ,$id);
     $query = $this->db->get($table);
     $result_array = $query->row();
     return count($result_array);
   }
 
-  function logSuccess($data_fields)
-  {    
-    $filename = basename($data_fields['file_name']);
-    
-    // Need to compose success message. What data is important?
-    $this->logmodel->writeToApplicationLog(strtoupper($data_fields['event_type']).' - SensorID: '.$data_fields['sensor_id'].', File archived: '.$filename);	
-   }
-
-
-  function logFailure($data_fields)
-  {      
-    $filename = basename($data_fields['file_name']);
-
-    if (isset($data_fields['file_format_error'])) { // abstract this to error_type, if other types are required
-    
-      // write to log - as of now, on one type of error - file_format_error. All should be aborted.
-      $this->logmodel->writeToApplicationLog('ERROR - '.$data_fields['file_format_error'].' Moving '.$filename .' to '.$this->config->item('reports_malformed_dir').'. Aborting process.');	
-    }
-    // send me email once a day! using a cookie
-  }
 
   function _setErrorMsg($type, &$fields)
   {

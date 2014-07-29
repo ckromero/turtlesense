@@ -69,12 +69,10 @@ class Log extends CI_Model {
     $this->writeToApplicationLog(strtoupper($data_fields['event_type']).': '.$data_fields['sensor_id'].' - '.$data_fields['event_datetime']. '. Loaded to the database.');	
   }
 
-
   function logDuplicate($data_fields)
   {    
     $this->writeToApplicationLog(strtoupper($data_fields['event_type']).': '.$data_fields['sensor_id'].' - '.$data_fields['event_datetime']. '. Log entry skipped. Duplicate.');	
   }
-
 
   function logFailure($data_fields)
   {      
@@ -88,7 +86,6 @@ class Log extends CI_Model {
     // send me email once a day! using a cookie
   }
 
-
   function deleteLogFile($file)
   {
 		if (is_file($file))
@@ -98,8 +95,7 @@ class Log extends CI_Model {
 		}	
 		return false;							    
   }
-  
-					
+  					
 }		
 /* EOF */
 

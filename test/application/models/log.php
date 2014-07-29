@@ -71,7 +71,7 @@ class Log extends CI_Model {
 
   function logDuplicate($data_fields)
   {    
-    $this->writeToApplicationLog('DUPLICATE: '.$data_fields['sensor_id'].' - '.$data_fields['event_datetime']. '. Log entry skipped.');	
+    $this->writeToApplicationLog('DUPLICATE: '.$data_fields['sensor_id'].' - '.$data_fields['event_datetime']. '. Entry skipped.');	
   }
 
   function logFailure($data_fields)

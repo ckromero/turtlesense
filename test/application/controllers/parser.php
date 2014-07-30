@@ -39,16 +39,20 @@ class Parser extends CI_Controller {
     foreach ($files as $file_name) {                
 
       $txt_file = trim(file_get_contents($file_name));      
-
       $array_of_logEntries = explode("\r\r", trim($txt_file));
+      
+      if ( count($array_of_logEntries) == 1) {  
+        // file doesn't use return character, so parse by newline instead
+        $array_of_logEntries = explode("\n\n", $txt_file);
+      } 
       $array_of_logEntries = array_map('trim', $array_of_logEntries);
-
+ 
       foreach ($array_of_logEntries as $logEntry) {        
   
         $logEntry_lines = explode("\r", $logEntry);
         
         if ( count($logEntry_lines) == 1) {  
-          // file doesn't use return character, so parase by newline instead
+          // file doesn't use return character, so parse by newline instead
           $logEntry_lines = explode("\n", $logEntry);
         } 
   
@@ -84,7 +88,7 @@ class Parser extends CI_Controller {
             // Failure. Move log file to malformed reports directory    
             $this->parsemodel->moveMalformedLogFile($data_fields); 
             $this->logmodel->logFailure($data_fields); 
-            echo 'failure - malformed log report - moved to malformed reports archive.<br>';
+            echo 'failure - malformed log report - moved to malformed reports archive<br>';
         }
         else {
         
@@ -94,7 +98,7 @@ class Parser extends CI_Controller {
             // Duplicate. Skip this log record.
             $this->logmodel->logDuplicate($data_fields); 
             $this->logmodel->writeToDeviceLog($data_fields);
-            echo 'duplicate - entry skipped - '.$data_fields['sensor_id'].' '. $data_fields['event_datetime'].'.<br>';
+            echo 'duplicate - entry skipped - '.$data_fields['sensor_id'].' '. $data_fields['event_datetime'].'<br>';
           }
           else {
           
@@ -102,7 +106,7 @@ class Parser extends CI_Controller {
             $this->doDatabaseActions($data_fields);
             $this->logmodel->logSuccess($data_fields);           
             $this->logmodel->writeToDeviceLog($data_fields);
-            echo 'success - loaded to database - '.$data_fields['sensor_id'].' '. $data_fields['event_datetime'].'.<br>';
+            echo 'success - loaded to database - '.$data_fields['sensor_id'].' '. $data_fields['event_datetime'].'<br>';
           } 
         }       
       } $this->logmodel->deleteLogFile($data_fields['file_name']);
@@ -131,8 +135,7 @@ class Parser extends CI_Controller {
              
         // insert comm, if it doesn't exist 
         $comm_exists = $this->parsemodel->commExists($data_fields);
-        $comm_exists ? $this->parsemodel->updateComm($data_fields) : $this->parsemodel->insertComm($data_fields);   
-  
+        $comm_exists ? $this->parsemodel->updateComm($data_fields) : $this->parsemodel->insertComm($data_fields);     
         break;
       
       case 'sensor report':

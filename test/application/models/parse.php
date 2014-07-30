@@ -263,11 +263,10 @@ class Parse extends CI_Model {
     $longNestId = $this->_createLongNestId($regdate, $sensorid);
  
     $nest['nest_id_long']       = $longNestId;
-    $nest['registered_datetime']  = $data_fields['event_datetime'];
+    $nest['registered_datetime']= $data_fields['event_datetime'];
     $nest['sensor_id']          = $data_fields['sensor_id'];
     $nest['sensor_id']          = $data_fields['sensor_id'];
     $nest['comm_id']            = $data_fields['comm_id'];
-    $nest['clutch_datetime']    = $data_fields['event_datetime'];
     $nest['nest_latitude']      = $data_fields['nest_latitude'];
     $nest['nest_longitude']     = $data_fields['nest_longitude'];
     $nest['active']             = 1;

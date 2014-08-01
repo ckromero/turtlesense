@@ -121,21 +121,46 @@ class Parser extends CI_Controller {
     {
       case 'nest registration':
                
-        /* Insert the new nest, then the event, then update the sensor if it exists, else insert it,
-        and then update the comm if it exists, else insert it */
+        $nest_exists = $this->parsemodel->nestExists($data_fields);       
+        if ($nest_exists) {
+          
+          $data_fields['nest_id'] = $nest_exists;
+          
+        	$this->parsemodel->updateNest($data_fields);
+          $this->parsemodel->insertEvent_SensorRegistration($data_fields);  
+          $this->parsemodel->updateSensor($data_fields);
 
-        $data_fields['nest_id'] = $this->parsemodel->insertNest($data_fields);
-                    
-        // insert event
-        $this->parsemodel->insertEvent_SensorRegistration($data_fields);
+          $comm_exists = $this->parsemodel->commExists($data_fields);            	
+        	if ($comm_exists) {
         
-        // insert sensor, if it doesn't exist
-        $sensor_exists = $this->parsemodel->sensorExists($data_fields);
-        $sensor_exists ? $this->parsemodel->updateSensor($data_fields) : $this->parsemodel->insertSensor($data_fields);
-             
-        // insert comm, if it doesn't exist 
-        $comm_exists = $this->parsemodel->commExists($data_fields);
-        $comm_exists ? $this->parsemodel->updateComm($data_fields) : $this->parsemodel->insertComm($data_fields);     
+        		$this->parsemodel->updateComm($data_fields);
+        
+        	} else {
+        
+        		$this->parsemodel->insertComm($data_fields);     
+          }
+
+        } else { //nest does not exist
+          
+          $sensorid = $data_fields['sensor_id'];
+        	$activeSensorExistsInNests = $this->parsemodel->activeSensorExistsInNests($sensorid);   
+        	
+        	if ($activeSensorExistsInNests) {
+        	
+            $nestid = $activeSensorExistsInNests;
+        		$this->parsemodel->deActivateNestByNestID($nestid);
+          }
+          
+        	$data_fields['nest_id'] = $this->parsemodel->insertNest($data_fields);
+        	$this->parsemodel->insertEvent_SensorRegistration($data_fields);
+        
+          $sensor_exists = $this->parsemodel->sensorExists($data_fields);
+          $sensor_exists ? $this->parsemodel->updateSensor($data_fields) : $this->parsemodel->insertSensor($data_fields);
+
+
+          $comm_exists = $this->parsemodel->commExists($data_fields);
+          $comm_exists ? $this->parsemodel->updateComm($data_fields) : $this->parsemodel->insertComm($data_fields);     
+        }
         break;
       
       case 'sensor report':
@@ -147,6 +172,9 @@ class Parser extends CI_Controller {
     }
   }
 
-
 }
 /* EOF */
+
+
+
+

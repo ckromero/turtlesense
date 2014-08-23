@@ -33,11 +33,12 @@ class Log extends CI_Model {
 		return TRUE;
 	}
 					
-	function writeToDeviceLog($data_fields) 
+	function reconstructRegistrationFile($data_fields) 
 	{
     $logEntry_lines     = $data_fields['logEntry_lines'];
     $logEntry_filename  = basename($data_fields['file_name']);
     
+    // temporary fix until Sam updates the device to output a dot before the extension
     if (strpos($logEntry_filename, '.') === false) {
       $logEntry_filename = str_replace('txt', '.txt', $logEntry_filename);
     } 
@@ -61,39 +62,53 @@ class Log extends CI_Model {
     fclose($fp);
     
     @chmod($filepath, FILE_WRITE_MODE);
+    
+    $msg = 'Reconstructed file: '.$data_fields['file_name'];
+    $this->writeToApplicationLog($msg);	
+    echo $msg.'<br>';
+
     return TRUE;
 	}
 					
   function logSuccess($data_fields)
   {    
-    $this->writeToApplicationLog(strtoupper($data_fields['event_type']).': '.$data_fields['sensor_id'].' - '.$data_fields['event_datetime']. '. Loaded to the database.');	
+    $msg = strtoupper($data_fields['event_type']).': '.$data_fields['sensor_id'].' - '.$data_fields['event_datetime']. '. Loaded to the database.';
+    $this->writeToApplicationLog($msg);	
+    echo $msg.'<br>';
   }
 
-  function logDuplicate($data_fields)
+  function logDuplicateEvent($data_fields)
   {    
-    $this->writeToApplicationLog('DUPLICATE: '.$data_fields['sensor_id'].' - '.$data_fields['event_datetime']. '. Entry skipped.');	
+    $msg = 'DUPLICATE: '.$data_fields['sensor_id'].' - '.$data_fields['event_datetime']. '. Entry skipped.';
+    $this->writeToApplicationLog($msg);
+    echo $msg.'<br>';
   }
 
   function logFailure($data_fields)
   {      
     $filename = basename($data_fields['file_name']);
 
-    if (isset($data_fields['file_format_error'])) { // abstract this to error_type, if other types are required
+    if (isset($data_fields['file_format_error'])) {
     
-      // write to log - as of now, on one type of error - file_format_error. All should be aborted.
-      $this->writeToApplicationLog('ERROR - '.$data_fields['file_format_error'].' Moving '.$filename .' to '.$this->config->item('reports_malformed_dir').'. Aborting process.');	
+      $msg = 'ERROR - '.$data_fields['file_format_error'].' Moving '.$filename .' to '.$this->config->item('reports_malformed_dir').'. Aborting process.';
+      $this->writeToApplicationLog($msg);	
+      echo $msg.'<br>';
     }
     // send me email once a day! using a cookie
   }
 
-  function deleteLogFile($file)
+  function deleteLogFile($file_name)
   {
-		if (is_file($file))
+		if (is_file($file_name))
 		{
-			unlink($file);
-			return true;
+			unlink($file_name);
+			$msg = 'Deleted file: '.$file_name;
+			$this->writeToApplicationLog($msg);
+			echo $msg.'<br>';
+			
+			return TRUE;
 		}	
-		return false;							    
+		return FALSE;							    
   }
   					
 }		

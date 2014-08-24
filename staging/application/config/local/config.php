@@ -30,12 +30,8 @@ $theme = 'carapace';
 $config['domain'] 		= 'localhost/ts';
 $config['base_url']		= 'http://'.$config['domain'].'/';
 
-// Logs & Archives
-$config['logs_parser_dir']        = realpath(BASEPATH . '../logs/parser');
-$config['reports_to_parse_dir']   = realpath(BASEPATH . '../../../reports_to_parse');
-$config['reports_processed_dir']  = realpath(BASEPATH . '../../../reports_processed');
-$config['reports_malformed_dir']  = realpath(BASEPATH . '../../../reports_malformed');
-
+$config['logs_parser_dir'] = realpath(BASEPATH . '../logs/parser');
+$config['reports_dir']      = realpath(BASEPATH . '../../../reports_ts');
 
 
 /*

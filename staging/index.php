@@ -36,12 +36,12 @@ if (defined('ENVIRONMENT'))
 {
 	switch (ENVIRONMENT)
 	{
-		case 'local-salvatore':
-		case 'test':
+		case 'local':
+		case 'staging':
 			error_reporting(E_ALL);
 		break;
 	
-		case 'production':
+		case 'live':
 			error_reporting(0);
 		break;
 

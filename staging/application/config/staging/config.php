@@ -30,11 +30,8 @@ $theme = 'carapace';
 $config['domain'] 		= 'root.turtlesense.org/test';
 $config['base_url']		= 'http://'.$config['domain'].'/';
 
-// Logs & Archives
-$config['logs_parser_dir']        = realpath(BASEPATH . '../logs/parser');
-$config['reports_to_parse_dir']         = realpath(BASEPATH . '../../../reports_test'); //'/home/u40427476-NWB';
-$config['reports_processed_dir']  = realpath(BASEPATH . '../../../reports_processed');
-$config['reports_malformed_dir']  = realpath(BASEPATH . '../../../reports_malformed');
+$config['logs_parser_dir'] = realpath(BASEPATH . '../logs/parser');
+$config['reports_dir']     = realpath(BASEPATH . '../../../reports_ts');
 
 /*
 |--------------------------------------------------------------------------

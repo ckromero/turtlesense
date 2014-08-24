@@ -8,6 +8,19 @@ class Log extends CI_Model {
 		$this->load->helper('file');
 	}			
 	
+	function read_lastparse_filemtime() 
+	{
+		$filepath = $this->config->item('logs_parser_dir').'/.lastparse_filemtime';
+    return file_get_contents($filepath);
+	}
+					
+	function write_lastparse_filemtime($time='0000-00-00 00:00:00') 
+	{
+		$filepath = $this->config->item('logs_parser_dir').'/.lastparse_filemtime';
+    file_put_contents($filepath, $time, LOCK_EX);
+    return TRUE;
+	}
+					
 	function writeToApplicationLog($msg='') 
 	{
 		$filepath = $this->config->item('logs_parser_dir').'/'.date('Y-m-d').'.php';
@@ -33,6 +46,7 @@ class Log extends CI_Model {
 		return TRUE;
 	}
 					
+	/*
 	function reconstructRegistrationFile($data_fields) 
 	{
     $logEntry_lines     = $data_fields['logEntry_lines'];
@@ -69,7 +83,8 @@ class Log extends CI_Model {
 
     return TRUE;
 	}
-					
+*/
+			
   function logSuccess($data_fields)
   {    
     $msg = strtoupper($data_fields['event_type']).': '.$data_fields['sensor_id'].' - '.$data_fields['event_datetime']. '. Loaded to the database.';
@@ -90,25 +105,11 @@ class Log extends CI_Model {
 
     if (isset($data_fields['file_format_error'])) {
     
-      $msg = 'ERROR - '.$data_fields['file_format_error'].' Moving '.$filename .' to '.$this->config->item('reports_malformed_dir').'. Aborting process.';
+      $msg = 'ERROR - '.$data_fields['file_format_error']. 'Filename: '.$filename .'. Aborting process.';
       $this->writeToApplicationLog($msg);	
       echo $msg.'<br>';
     }
     // send me email once a day! using a cookie
-  }
-
-  function deleteLogFile($file_name)
-  {
-		if (is_file($file_name))
-		{
-			unlink($file_name);
-			$msg = 'Deleted file: '.$file_name;
-			$this->writeToApplicationLog($msg);
-			echo $msg.'<br>';
-			
-			return TRUE;
-		}	
-		return FALSE;							    
   }
   					
 }		

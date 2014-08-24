@@ -233,7 +233,7 @@ class Parse extends CI_Model {
  
  	function getFiles() 
 	{	
-	  $files = get_filenames($this->config->item('reports_to_parse_dir'), TRUE);	  
+	  $files = get_filenames($this->config->item('reports_dir'), TRUE);	  
 		return $files;
 	}
 			
@@ -492,19 +492,6 @@ class Parse extends CI_Model {
  
   // HELPERS
     
-  function moveMalformedLogFile($data_fields)
-  {
-    $targetFileName = basename($data_fields['file_name']);
-    $sourceFile     = $data_fields['file_name'];
-
-    $targetDirPath  = $this->config->item('reports_malformed_dir');  
-    $targetFile     = $targetDirPath.'/'.$targetFileName;
-    
-  	if(file_exists($sourceFile)){
-  		rename($sourceFile,$targetFile);
-  	}
-  }
-  
   function _setErrorMsg($type, &$fields)
   {
     switch($type)

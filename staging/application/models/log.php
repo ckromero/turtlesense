@@ -105,7 +105,7 @@ class Log extends CI_Model {
 
     if (isset($data_fields['file_format_error'])) {
     
-      $msg = 'ERROR - '.$data_fields['file_format_error']. 'Filename: '.$filename .'. Aborting process.';
+      $msg = 'ERROR - '.$data_fields['file_format_error']. ' Filename: '.$filename .'. Aborting process.';
       $this->writeToApplicationLog($msg);	
       echo $msg.'<br>';
     }

@@ -41,149 +41,112 @@ class Parser extends CI_Controller {
 	
 	function index()
 	{    
-    $files = $this->parsemodel->getFiles();
- 
     // Get newest modification date that was stored after the last batch of parsed files
     $lastparse_filemtime = $this->logmodel->read_lastparse_filemtime();
+    $files = $this->parsemodel->getFiles($lastparse_filemtime);
+ 
 
-
+//echo '<pre>';print_r($files);exit;
 //echo "The newest mod date from last batch is ". date("Y-m-d H:i:s", $lastparse_filemtime);exit;
-
 
     $logEntry_typecode = '';
  
     if ($files) {
   
       $newest_filemtime = $lastparse_filemtime;
-   
+      
       foreach ($files as $file_name) {                       
-        
-        if (filemtime($file_name) > $lastparse_filemtime) {
-        
-          // compare file to newest file in this batch, so far
-          $newest_filemtime = (filemtime($file_name) > $newest_filemtime) ? filemtime($file_name) : $newest_filemtime;
+
+        // compare file to newest file in this batch, so far
+        $newest_filemtime = (filemtime($file_name) > $newest_filemtime) ? filemtime($file_name) : $newest_filemtime;
 
 //echo date("Y-m-d H:i:s", $newest_filemtime);exit;
-          
-          $txt_file = trim(file_get_contents($file_name));      
-          
-          /* There can be several reports in one file, each terminated by '--end of report--'
-           * If '--end of report--' is not found, it's a registration file, so split on \r\r */
-           
-          if (strpos($txt_file, '--end of report--') !== false) {
-            $logEntries_arr = explode("--end of report--", trim($txt_file));  
-          } else {
-            $logEntries_arr = explode("\r\r", trim($txt_file));    
-          }
-          
-          // In case files use \n\n, split on newline instead
-          if ( count($logEntries_arr) == 1) {
-            $logEntries_arr = explode("\n\n", $txt_file);
-          } 
-          $logEntries_arr = array_map('trim', $logEntries_arr); // trims all elements
-          $logEntries_arr = array_filter($logEntries_arr); // removes empty elements
-      
-    //echo '<pre>';print_r($logEntries_arr);
-     
-          foreach ($logEntries_arr as $logEntry) {        
-      
-            $logEntry_lines = explode("\r", $logEntry);
-    
-            if ( count($logEntry_lines) == 1) {  
-              // file doesn't use return character, so split on newline
-              $logEntry_lines = explode("\n", $logEntry);
-            } 
-    
-    //echo '<pre>';print_r($logEntry_lines);
-         
-            $logEntry_lines = array_map('trim', $logEntry_lines);      
-          
-            // log title determines which parser to call
-            $logEntry_typecode = strtoupper(substr($logEntry_lines[0], 0, 3));
-    
-    //echo $logEntry_typecode;
         
-            $data_fields = array();
-            switch ($logEntry_typecode) 
-            {          
-              case 'REG': // registration
-                $data_fields = $this->parsemodel->parse_NestRegistration($logEntry_lines);
-                $data_fields['file_name']      = $file_name;
-                // MS: remove $data_fields['logEntry_lines'] = $logEntry_lines; // to re-create log file   
+        $txt_file = trim(file_get_contents($file_name));      
+        
+        /* There can be several reports in one file, each terminated by '--end of report--'
+         * If '--end of report--' is not found, it's a registration file, so split on \r\r */
+         
+        if (strpos($txt_file, '--end of report--') !== false) {
+          $logEntries_arr = explode("--end of report--", trim($txt_file));  
+        } else {
+          $logEntries_arr = explode("\r\r", trim($txt_file));    
+        }
+        
+        // In case files use \n\n, split on newline instead
+        if ( count($logEntries_arr) == 1) {
+          $logEntries_arr = explode("\n\n", $txt_file);
+        } 
+        $logEntries_arr = array_map('trim', $logEntries_arr); // trims all elements
+        $logEntries_arr = array_filter($logEntries_arr); // removes empty elements
+//echo '<pre>';print_r($logEntries_arr);
+   
+        foreach ($logEntries_arr as $logEntry) {        
     
-    //echo  '<pre>';print_r($data_fields);   exit;      
-    
-                break;
-              
-              case 'REP': // report    
-                $data_fields = $this->parsemodel->parse_NestReport($logEntry_lines);
-                $data_fields['file_name']      = $file_name; 
-                // MS: remove $data_fields['logEntry_lines'] = $logEntry_lines;
-                
-                // capture report_filename_id for inserts to RECORDS
-                $report['report_filename_id']  = $data_fields['report_filename_id'];
-    
-    //echo  '<pre>REP<br>';print_r($data_fields);   exit;      
-    
-                break;
-              
-              case 'REC': // record  
-                $data_fields = $this->parsemodel->parse_NestRecords($logEntry_lines);
-                $data_fields['file_name'] = $file_name;   
-                //$data_fields['logEntry_lines'] = $logEntry_lines;         
-                if (isset($report)){
-                  $data_fields['report_filename_id'] = $report['report_filename_id'];
-                } 
-                break;
-              
-              case 'TUR': // turtlesense       
-                // end of file
-                break;
-              
-              default:        
-                $data_fields['file_name'] = $file_name;
-                $data_fields['file_format_error'] = "File contains unknown event type.";
-                break;    
-            }
-    
-            if (isset($data_fields['file_format_error'])) {  
-            
-                // Failure. If a single datum is out of place, log the issue and skip     
-                $this->logmodel->logFailure($data_fields); 
-                echo 'failure - malformed log report<br>';
-            }
-            else if ($logEntry_typecode == 'REG') {
-            
-              // REGISTRATION - skip entry if event exists
-              $event_exists = $this->parsemodel->eventExists($data_fields);
-              if ($event_exists) {
-              
-                $this->logmodel->logDuplicateEvent($data_fields);
-                continue;   
-              }
-              else {
+          $logEntry_lines = explode("\r", $logEntry);
+  
+          if ( count($logEntry_lines) == 1) {  
+            // file doesn't use return character, so split on newline
+            $logEntry_lines = explode("\n", $logEntry);
+          }   
+//echo '<pre>';print_r($logEntry_lines);
        
-                $this->_processNestRegistration($data_fields); 
-                continue;          
+          $logEntry_lines = array_map('trim', $logEntry_lines);      
+        
+          // log title determines which parser to call
+          $logEntry_typecode = strtoupper(substr($logEntry_lines[0], 0, 3));
+//echo $logEntry_typecode;
+      
+          $data_fields = array();
+          switch ($logEntry_typecode) 
+          {          
+            case 'REG': // registration
+              $data_fields = $this->parsemodel->parse_NestRegistration($logEntry_lines);
+              $data_fields['file_name']      = $file_name;  
+//echo  '<pre>';print_r($data_fields);   exit;      
+  
+              break;
+            
+            case 'REP': // report    
+              $data_fields = $this->parsemodel->parse_NestReport($logEntry_lines);
+              $data_fields['file_name']      = $file_name; 
+              $report['report_filename_id']  = $data_fields['report_filename_id'];
+//echo  '<pre>REP<br>';print_r($data_fields);   exit;      
+  
+              break;
+            
+            case 'REC': // record  
+              $data_fields = $this->parsemodel->parse_NestRecords($logEntry_lines);
+              $data_fields['file_name'] = $file_name;          
+              if (isset($report)){
+                $data_fields['report_filename_id'] = $report['report_filename_id'];
               } 
-              
-            } 
-            else if ($logEntry_typecode == 'REP') {
-    
-                // REPORT - look at report (and records) even if event already exists    
-                $event_exists = $this->parsemodel->eventExists($data_fields);
-                if ($event_exists) {
-                  
-                  //$this->logmodel->logDuplicateEvent($data_fields);    
-                  //echo 'duplicate - entry skipped - '.$data_fields['sensor_id'].' '. $data_fields['event_datetime'].'<br>'; 
-                }          
-                
-                // ! YOUR ARE HERE
-                $this->_processNestReport($data_fields);              
-               
-    
-            } 
-            else if ($logEntry_typecode == 'REC') {
+              break;
+            
+            case 'TUR': // turtlesense       
+              // end of file
+              break;
+            
+            default:        
+              $data_fields['file_name'] = $file_name;
+              $data_fields['file_format_error'] = "File contains unknown event type.";
+              break;    
+          }
+  
+          if (isset($data_fields['file_format_error'])) {  
+            
+            $this->logmodel->logFailure($data_fields); 
+          }
+          else if ($logEntry_typecode == 'REG') {
+
+            $this->_processNestRegistration($data_fields); 
+         
+          } 
+          else if ($logEntry_typecode == 'REP') {
+   
+            $this->_processNestReport($data_fields);                
+          } 
+          else if ($logEntry_typecode == 'REC') {
               
               // RECORDS
               
@@ -218,48 +181,39 @@ class Parser extends CI_Controller {
                 */
               
             }   
-          } 
         } 
-        else {
-          
-            echo basename($file_name). ' was skipped. Read by an earlier batch.<br>';
-            continue;
+        
+        // Save to a file, the newest modification date from this batch of parsed files
+        $this->logmodel->write_lastparse_filemtime($newest_filemtime); 
+        echo "Save newest modified date to file. Date: ". date("Y-m-d H:i:s", $newest_filemtime);
 
-        }
-      } //foreach
-      
-      // Save to a file, the newest modification date from this batch of parsed files
-      $this->logmodel->write_lastparse_filemtime($newest_filemtime); 
-      echo "Save newest modified date to file. Date: ". date("Y-m-d H:i:s", $newest_filemtime);
-      
+      } //foreach     
     } 
-    else {
-      
+    else {      
       echo "No new files to read.<br>";
-
     }
 	}
 		  
   function _processNestRegistration($data_fields)
   {    
-    $this->parsemodel->dba_nestRegistration($data_fields);
-    $this->logmodel->logSuccess($data_fields);         
-  }
-  
+    // override event_type, since could be passed by a "nest report"
+    $data_fields['event_type'] = 'nest registration';
+    $event_exists = $this->parsemodel->eventExists($data_fields);
+    if (!$event_exists) {
+      $this->parsemodel->dba_nestRegistration($data_fields);
+      $this->logmodel->logSuccess($data_fields);         
+    }
+  }  
 
   function _processNestReport($data_fields)
   {   
-    $this->_processNestRegistration($data_fields);
-    // ??? $this->logmodel->reconstructRegistrationFile($data_fields);
-    
-echo 'next, insert report';exit;
-
-  /*
-    $this->_doDBA_nestReport($data_fields);
-    $this->logmodel->logSuccess($data_fields);           
-    echo 'success - loaded report to database - '.$data_fields['sensor_id'].' '. $data_fields['event_datetime'].'<br>';  
-    */   
-    
+    $event_exists = $this->parsemodel->eventExists($data_fields);
+    if (!$event_exists) {
+      
+       $this->_processNestRegistration($data_fields); 
+    }  
+    $this->parsemodel->dba_nestReport($data_fields);
+    $this->logmodel->logSuccess($data_fields);             
   }
 
 }

@@ -81,6 +81,7 @@ class Parse extends CI_Model {
         $fields['event_type'] = 'nest report';
         strpos($value, ':') !== false ? $data_array = explode(": ", $value) : $this->_setErrorMsg('report',$fields);      
         strpos($data_array[0], 'Report') !== false ? '' : $this->_setErrorMsg('report',$fields);
+        preg_match('/\d{2,3}(?=.txt)/', $data_array[1], $match) ? $fields['report_number'] = $match[0] : $this->_setErrorMsg('report',$fields);
         preg_match('/^\d{4}-\d{2}-\d{2}_\w{2}\d{4}_r-\d{2,3}-\d{2,3}/', $data_array[1], $match) ? $fields['report_filename_id'] = $match[0] : $this->_setErrorMsg('report',$fields);
         break;
 
@@ -130,8 +131,8 @@ class Parse extends CI_Model {
         $string = str_replace(': ', '::', $value);
         strpos($string, '::') !== false ? $data_array = explode("::", $string) : $this->_setErrorMsg('startdate',$fields);     
         strpos($data_array[0], 'Start date/time') !== false ? '' : $this->_setErrorMsg('startdate',$fields);
-        $data_array[1] = str_replace(',', '', $data_array[1]); // remove comma from date/time string for php
-        preg_match('/^\d{4}\/\d{2}\/\d{2}\d{2}\:\d{2}\:\d{2}/', $data_array[1]) ? $fields['start_datetime'] = $data_array[1] : $this->_setErrorMsg('startdate',$fields);
+        $data_array[1] = str_replace(',', ' ', $data_array[1]); // remove comma from date/time string for php
+        preg_match('/^\d{4}\/\d{2}\/\d{2}\s\d{2}\:\d{2}\:\d{2}/', $data_array[1]) ? $fields['report_starttime'] = $data_array[1] : $this->_setErrorMsg('startdate',$fields);
         break;
         
         case 7:
@@ -147,7 +148,7 @@ class Parse extends CI_Model {
         //  [8]=> string(18) "Secs per rec: 0168" 
         strpos($value, ':') !== false ? $data_array = explode(": ", $value) : $this->_setErrorMsg('secsperrec',$fields);              
         strpos($data_array[0], 'Secs per rec') !== false ? '' : $this->_setErrorMsg('secsperrec',$fields); 
-        preg_match('/^[0-9A-F]{4}/', $data_array[1]) ? $fields['secs_per_record'] = $data_array[1] : $this->_setErrorMsg('secsperrec',$fields);  
+        preg_match('/^[0-9A-F]{4}/', $data_array[1]) ? $fields['seconds_per_record'] = $data_array[1] : $this->_setErrorMsg('secsperrec',$fields);  
         break;
         
         case 9:
@@ -231,15 +232,37 @@ class Parse extends CI_Model {
 
   // GETS
  
- 	function getFiles() 
+ 	function getFiles($since_date) 
 	{	
-	  $files = get_filenames($this->config->item('reports_dir'), TRUE);	  
-		return $files;
+    $files = array();
+    $dir = $this->config->item('reports_dir');  
+    if (is_dir($dir)) {
+      if ($dh = opendir($dir)) {
+        while (($file = readdir($dh)) !== false) {
+          // filter out dot files
+          $filepath = $dir.'/'.$file;
+          if (strpos($file, '.') != 0 and filemtime($filepath) > $since_date ) {
+            $files[] = $filepath;
+          }
+        }
+        closedir($dh);
+      }
+    }
+		return $files ? $files : false;
 	}
-			
-	function getNestById($nestid) 
+		
+	function _getNestById($nestid) 
 	{	
 		$this->db->where('nest_id', $nestid);		
+		$query = $this->db->get('NESTS');
+		$result = $query->row();		
+		return $result;
+	}
+			
+	function getNestFromDateAndSensor($nestdate, $sensorid) 
+	{	
+		$this->db->where('nest_date', $nestdate);		
+		$this->db->where('sensor_id', $sensorid);		
 		$query = $this->db->get('NESTS');
 		$result = $query->row();		
 		return $result;
@@ -260,15 +283,18 @@ class Parse extends CI_Model {
     return $this->_doInsertAutoId('NESTS', $nest);		
   }
   
-  function insertReport($data_fields)
+  function _insertReport($data_fields)
   {
     $report['report_filename_id'] = $data_fields['report_filename_id'];
-    $report['sensor_id'] = $data_fields['sensor_id'];
-    $report['comm_id']   = $data_fields['comm_id'];
-    $report['latitude']  = $data_fields['latitude'];
-    $report['longitude'] = $data_fields['longitude'];
-    $report['active']    = 1;
-  
+    $report['nest_id'] = $data_fields['nest_id'];
+    $report['days_active']   = $data_fields['days_active'];
+    $report['report_number']  = $data_fields['report_number'];
+    $report['report_starttime'] = $data_fields['report_starttime'];
+    $report['seconds_per_record'] = $data_fields['seconds_per_record'];
+    $report['num_records'] = $data_fields['num_records'];
+
+//echo '<pre>';print_r($report);exit;
+
     return $this->_doInsertAutoId('REPORTS', $report);		
   }
   
@@ -284,7 +310,7 @@ class Parse extends CI_Model {
     return $this->_doInsertAutoId('EVENTS', $event);
   }
   
-  function insertSensor($data_fields)
+  function _insertSensor($data_fields)
   {
     $sensor['sensor_id']       = $data_fields['sensor_id'];
     $sensor['nest_id']         = $data_fields['nest_id'];
@@ -295,7 +321,7 @@ class Parse extends CI_Model {
     return $this->_doInsert('SENSORS', $sensor);		
   }
   
-  function insertComm($data_fields)
+  function _insertComm($data_fields)
   {
     $comm['comm_id']       = $data_fields['comm_id'];
     $comm['comm_type']     = $data_fields['comm_type'];
@@ -334,18 +360,13 @@ class Parse extends CI_Model {
   {    
     $nestid = $data_fields['nest_id'];
     
-    $nest = $this->getNestById($nestid);
+    $nest = $this->_getNestById($nestid);
     
     $incoming_nest['comm_id']   = $data_fields['comm_id'];
     $incoming_nest['latitude']  = $data_fields['latitude'];
     $incoming_nest['longitude'] = $data_fields['longitude'];
-    $incoming_nest['nest_date'] = $data_fields['nest_date'];
+    $incoming_nest['active']    = 1;
     
-    // if nest_date of incoming is greater than recorded
-    if ($incoming_nest['nest_date'] > $nest->nest_date) {
-      $incoming_nest['active']    = 1;
-    }
-        
     $this->db->where('nest_id', $nestid);
     $this->db->update('NESTS', $nest);
     
@@ -354,8 +375,8 @@ class Parse extends CI_Model {
   	} 	
     return FALSE; 			
   }
-       
-  function updateSensor($data_fields)
+        
+  function _updateSensor($data_fields)
   {
     $sensorid = $data_fields['sensor_id'];
     
@@ -372,7 +393,7 @@ class Parse extends CI_Model {
   	}			
   }
        
-  function updateComm($data_fields)
+  function _updateComm($data_fields)
   {
     $commid = $data_fields['comm_id'];
 
@@ -389,7 +410,7 @@ class Parse extends CI_Model {
   	}			
   }
          
-  function deActivateNestByNestID($nestid)
+  function _deActivateNestByNestID($nestid)
   {
     $nest['active'] = 0;
     
@@ -403,8 +424,7 @@ class Parse extends CI_Model {
   	}			
   }
   
-  
- 
+   
   // INQUERIES 
   
   function _nestExists($data_fields)
@@ -422,7 +442,9 @@ class Parse extends CI_Model {
 
   function _reportExists($data_fields)
   {
-    $this->db->where('report_filename_id');
+    $reportFilenameId = $data_fields['report_filename_id'];
+
+    $this->db->where('report_filename_id',$reportFilenameId);
     $query = $this->db->get('REPORTS');
     
     $result = $query->row();
@@ -564,7 +586,7 @@ class Parse extends CI_Model {
       
       $data_fields['nest_id'] = $nest_exists;
       
-    	$this->_updateNest($data_fields);
+    	$this->_updateNest($data_fields);    	  	
       $this->_insertEvent($data_fields);  
       $this->_updateSensor($data_fields);
 
@@ -573,7 +595,7 @@ class Parse extends CI_Model {
     		$this->_updateComm($data_fields);    
     	} 
     	else {
-    		$this->_insertComm($data_fields);     
+    		$this->__insertComm($data_fields);     
       }
     } 
     else { //nest does not exist
@@ -583,40 +605,42 @@ class Parse extends CI_Model {
     	
     	if ($activeSensorExistsInNests) {   	
         $nestid = $activeSensorExistsInNests;
-    		$this->deActivateNestByNestID($nestid);
+    		$this->_deActivateNestByNestID($nestid);
       }
       
     	$data_fields['nest_id'] = $this->insertNest($data_fields);
     	$this->_insertEvent($data_fields);
     
       $sensor_exists = $this->_sensorExists($data_fields);
-      $sensor_exists ? $this->updateSensor($data_fields) : $this->insertSensor($data_fields);
+      $sensor_exists ? $this->_updateSensor($data_fields) : $this->_insertSensor($data_fields);
 
       $comm_exists = $this->_commExists($data_fields);
-      $comm_exists ? $this->updateComm($data_fields) : $this->insertComm($data_fields);     
+      $comm_exists ? $this->_updateComm($data_fields) : $this->_insertComm($data_fields);     
     }
   }
- 
-  
+   
   function dba_nestReport($data_fields)
   {
     $report_exists = $this->_reportExists($data_fields);   
-        
+
     if ($report_exists) {
-      
+
+      // MS:: is this needed?
       $data_fields['report_id'] = $report_exists;
     } 
-    else { //report does not exist
-            
-  // !IM HERE - Write db logic for reports and then for records
-    	$data_fields['report_id'] = $this->insertReport($data_fields);
-    	$this->_insertEvent($data_fields); // How is NestRegistration diff from Event_NestReport???
+    else { //report does not exist. insert report
     
+      $nestdate = $data_fields['nest_date'];
+      $sensorid = $data_fields['sensor_id'];    
+      $nest = $this->getNestFromDateAndSensor($nestdate, $sensorid);
+      $data_fields['nest_id'] = $nest->nest_id;
+    	$data_fields['report_id'] = $this->_insertReport($data_fields);
+    	    
       $sensor_exists = $this->_sensorExists($data_fields);
-      $sensor_exists ? $this->updateSensor($data_fields) : $this->insertSensor($data_fields);
+      $sensor_exists ? $this->_updateSensor($data_fields) : $this->_insertSensor($data_fields);
 
       $comm_exists = $this->_commExists($data_fields);
-      $comm_exists ? $this->updateComm($data_fields) : $this->insertComm($data_fields);     
+      $comm_exists ? $this->_updateComm($data_fields) : $this->_insertComm($data_fields);     
     }
   }
  

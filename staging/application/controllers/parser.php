@@ -41,13 +41,15 @@ class Parser extends CI_Controller {
 	
 	function index()
 	{    
-    // Get newest modification date that was stored after the last batch of parsed files
+    // Last modification date that was stored after the last batch of parsed files
     $lastparse_filemtime = $this->logmodel->read_lastparse_filemtime();
+    
+    // Get files with a mod date newer than $lastparse_filemtime 
     $files = $this->parsemodel->getFiles($lastparse_filemtime);
+    
  
-
-//echo '<pre>';print_r($files);exit;
-//echo "The newest mod date from last batch is ". date("Y-m-d H:i:s", $lastparse_filemtime);exit;
+//echo '<pre>Files to parse:<br>';print_r($files);
+//echo "Last batch: ". date("Y-m-d H:i:s", $lastparse_filemtime)."<br><br>";
 
     $logEntry_typecode = '';
  
@@ -57,10 +59,10 @@ class Parser extends CI_Controller {
       
       foreach ($files as $file_name) {                       
 
-        // compare file to newest file in this batch, so far
+        // compare file to newest file in this batch so far
         $newest_filemtime = (filemtime($file_name) > $newest_filemtime) ? filemtime($file_name) : $newest_filemtime;
 
-//echo date("Y-m-d H:i:s", $newest_filemtime);exit;
+//echo "This  file: ".date("Y-m-d H:i:s", $newest_filemtime)."<br>";
         
         $txt_file = trim(file_get_contents($file_name));      
         
@@ -77,9 +79,14 @@ class Parser extends CI_Controller {
         if ( count($logEntries_arr) == 1) {
           $logEntries_arr = explode("\n\n", $txt_file);
         } 
-        $logEntries_arr = array_map('trim', $logEntries_arr); // trims all elements
-        $logEntries_arr = array_filter($logEntries_arr); // removes empty elements
-//echo '<pre>';print_r($logEntries_arr);
+        
+        // remove empty elements
+        $logEntries_arr = array_filter($logEntries_arr); 
+
+        // trim each element
+        $logEntries_arr = array_map('trim', $logEntries_arr); 
+        
+//echo '<pre>Array of log entries to process from this file ($logEntries_arr): <br>';print_r($logEntries_arr);
    
         foreach ($logEntries_arr as $logEntry) {        
     
@@ -88,14 +95,14 @@ class Parser extends CI_Controller {
           if ( count($logEntry_lines) == 1) {  
             // file doesn't use return character, so split on newline
             $logEntry_lines = explode("\n", $logEntry);
-          }   
-//echo '<pre>';print_r($logEntry_lines);
+          } 
+            
+echo '<pre>Next log to process ($logEntry_lines):<br>';print_r($logEntry_lines);
        
-          $logEntry_lines = array_map('trim', $logEntry_lines);      
+          $logEntry_lines = array_map('trim', $logEntry_lines); 
         
           // log title determines which parser to call
           $logEntry_typecode = strtoupper(substr($logEntry_lines[0], 0, 3));
-//echo $logEntry_typecode;
       
           $data_fields = array();
           switch ($logEntry_typecode) 
@@ -103,29 +110,58 @@ class Parser extends CI_Controller {
             case 'REG': // registration
               $data_fields = $this->parsemodel->parse_NestRegistration($logEntry_lines);
               $data_fields['file_name']      = $file_name;  
-//echo  '<pre>';print_r($data_fields);   exit;      
-  
+              echo  '<pre>-- REGISTRATION -- Parsed data<br>';print_r($data_fields);   
+
+              if (!isset($data_fields['file_format_error'])) {  
+                echo "Im processing the REGISTRATION...<br>";
+                $this->_processNestRegistration($data_fields); 
+              }
+              else {
+                $this->logmodel->logFailure($data_fields);
+              }
               break;
-            
+              
+              
             case 'REP': // report    
               $data_fields = $this->parsemodel->parse_NestReport($logEntry_lines);
-              $data_fields['file_name']      = $file_name; 
-              $report['report_filename_id']  = $data_fields['report_filename_id'];
-//echo  '<pre>REP<br>';print_r($data_fields);   exit;      
-  
+              $data_fields['file_name']     = $file_name; 
+              //$report['report_filename_id'] = $data_fields['report_filename_id'];
+              echo  '<pre>-- REPORT -- Parsed data<br>';print_r($data_fields); 
+
+              if (!isset($data_fields['file_format_error'])) {  
+                echo "processing REPORT...<br>";
+                $report['report_id'] = $this->_processNestReport($data_fields); 
+                $report['num_records'] = $data_fields['num_records'];
+
+                if(empty($logEntry_lines[11])){
+                
+                  $recordEntry_lines = array_slice($logEntry_lines,12);
+echo '<pre>Record entry lines ($recordEntry_lines):<br>';print_r($recordEntry_lines);
+                                     
+                  $records = $this->parsemodel->parse_NestRecords($recordEntry_lines);
+                  $records['file_name'] = $file_name; 
+                  $records['report_id'] = $report['report_id'];        
+                  $records['num_records'] = $report['num_records'];        
+                  echo  '<pre>-- RECORDS -- Parsed data<br>';print_r($records);
+                  $this->_processNestRecords($records);               
+                 } else {
+                  $data_fields['file_format_error'] = "Expected empty element in logEntry_lines array. See case REP in parser switch.";
+                  $this->logmodel->logFailure($data_fields);                     
+                 }
+                                                                               
+              }
+              else {
+                $this->logmodel->logFailure($data_fields);
+              }
+              
               break;
-            
-            case 'REC': // record  
-              $data_fields = $this->parsemodel->parse_NestRecords($logEntry_lines);
-              $data_fields['file_name'] = $file_name;          
-              if (isset($report)){
-                $data_fields['report_filename_id'] = $report['report_filename_id'];
-              } 
-              break;
-            
-            case 'TUR': // turtlesense       
+              
+              
+            /*case 'TUR': // turtlesense       
               // end of file
               break;
+            */
+            
             
             default:        
               $data_fields['file_name'] = $file_name;
@@ -133,65 +169,20 @@ class Parser extends CI_Controller {
               break;    
           }
   
-          if (isset($data_fields['file_format_error'])) {  
-            
-            $this->logmodel->logFailure($data_fields); 
-          }
-          else if ($logEntry_typecode == 'REG') {
 
-            $this->_processNestRegistration($data_fields); 
-         
-          } 
-          else if ($logEntry_typecode == 'REP') {
-   
-            $this->_processNestReport($data_fields);                
-          } 
-          else if ($logEntry_typecode == 'REC') {
-              
-              // RECORDS
-              
-              // get report_id from REPORTS based on record_filename_id (have to parse for nest_id and sensor_id)
-              // insert RECORDS via loop
-              
-                /*
-                    [240] => Array
-                        (
-                            [record_num] => 00EF
-                            [temperature] => 01FA
-                            [x] => FDBF
-                            [y] => FE47
-                            [z] => 03C3
-                            [cnt] => 734E
-                            [max] => 0009
-                            [bin_a] => 0554
-                            [bin_b] => 0D03
-                            [bin_c] => 0BF7
-                            [bin_d] => 14AB
-                            [bin_e] => 21FE
-                            [bin_f] => 1959
-                            [bin_g] => 0471
-                            [bin_h] => 0072
-                            [bin_i] => 001B
-                            [bin_j] => 0000
-                        )
-                
-                    [devicemsg-241] => NEW SETTINGS LOADED. STARTS AFTER THIS REPORT
-                    [devicemsg-242] => POWERING UP
-                    [event_type] => nest record
-                */
-              
-            }   
-        } 
+        }//foreach entry
         
         // Save to a file, the newest modification date from this batch of parsed files
-        $this->logmodel->write_lastparse_filemtime($newest_filemtime); 
-        echo "Save newest modified date to file. Date: ". date("Y-m-d H:i:s", $newest_filemtime);
+        //$this->logmodel->write_lastparse_filemtime($newest_filemtime); 1388736000
+$this->logmodel->write_lastparse_filemtime('1388736000'); 
+echo "Saving file's date: ". date("Y-m-d H:i:s", $newest_filemtime)."<br><br>";
 
-      } //foreach     
+      }//foreach file
     } 
     else {      
       echo "No new files to read.<br>";
     }
+    echo "<br>THE END";exit;
 	}
 		  
   function _processNestRegistration($data_fields)
@@ -212,8 +203,28 @@ class Parser extends CI_Controller {
       
        $this->_processNestRegistration($data_fields); 
     }  
-    $this->parsemodel->dba_nestReport($data_fields);
-    $this->logmodel->logSuccess($data_fields);             
+    $reportid = $this->parsemodel->dba_nestReport($data_fields);
+    $this->logmodel->logSuccess($data_fields);     
+    return $reportid;        
+  }
+
+  function _processNestRecords($records)
+  {       
+
+echo 'inside processNestRecords!<br>';
+
+    $numrecs = 4;//$records['num_records'];
+    $reportid = $records['report_id'];
+
+    $x=1;
+    while ($x < $numrecs ) {
+      $data_fields = $records[$x];
+      $x++;
+      echo '<pre>datafields for a RECORD:<br>';print_r($data_fields).'<br>';        
+      //$this->parsemodel->dba_nestRecord($data_fields);
+    }    
+    //$this->logmodel->logSuccess($records);     
+    return $reportid;        
   }
 
 }

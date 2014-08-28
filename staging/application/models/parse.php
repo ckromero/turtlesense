@@ -114,7 +114,7 @@ class Parse extends CI_Model {
         strpos($data_array[0], 'Days active') !== false ? '' : $this->_setErrorMsg('daysactive',$fields);
         strpos($data_array[1], '-') !== false ? $data_array = explode("-", $data_array[1]) : $this->_setErrorMsg('daysactive',$fields);      
         preg_match('/^\d{2,3}/', $data_array[0]) ? $fields['days_active'] = $data_array[0] : $this->_setErrorMsg('daysactive',$fields);
-        preg_match('/^\d{2,3}/', $data_array[1]) ? $fields['report_num'] = $data_array[1] : $this->_setErrorMsg('daysactive',$fields);
+        preg_match('/^\d{2,3}/', $data_array[1]) ? $fields['report_number'] = $data_array[1] : $this->_setErrorMsg('daysactive',$fields);
         break;
 
         case 5:
@@ -215,7 +215,7 @@ class Parse extends CI_Model {
           
           // store row as a comm message if not at end of file
           $test_string = substr($report_array[0], 0, 5);
-          if ($test_string != '--end' and $test_string != 'turtl') {
+          if ($test_string != '--end' and $test_string != 'Turtl') {
             $reports['devicemsg-'.$label] = $report_array[0];
           }
         }        
@@ -223,10 +223,8 @@ class Parse extends CI_Model {
     }
      
     $reports['event_type'] = "nest record";
-    //return $reports;
-//echo '<pre>';print_r($reports);exit;
-
-
+    return $reports;
+//echo '<pre>';print_r($reports);
   }
 
 
@@ -259,7 +257,7 @@ class Parse extends CI_Model {
 		return $result;
 	}
 			
-	function getNestFromDateAndSensor($nestdate, $sensorid) 
+	function _getNestByDateAndSensor($nestdate, $sensorid) 
 	{	
 		$this->db->where('nest_date', $nestdate);		
 		$this->db->where('sensor_id', $sensorid);		
@@ -292,8 +290,6 @@ class Parse extends CI_Model {
     $report['report_starttime'] = $data_fields['report_starttime'];
     $report['seconds_per_record'] = $data_fields['seconds_per_record'];
     $report['num_records'] = $data_fields['num_records'];
-
-//echo '<pre>';print_r($report);exit;
 
     return $this->_doInsertAutoId('REPORTS', $report);		
   }
@@ -621,18 +617,18 @@ class Parse extends CI_Model {
    
   function dba_nestReport($data_fields)
   {
+    $data_fields['report_id'] = 0;
     $report_exists = $this->_reportExists($data_fields);   
 
     if ($report_exists) {
 
-      // MS:: is this needed?
       $data_fields['report_id'] = $report_exists;
     } 
     else { //report does not exist. insert report
     
       $nestdate = $data_fields['nest_date'];
       $sensorid = $data_fields['sensor_id'];    
-      $nest = $this->getNestFromDateAndSensor($nestdate, $sensorid);
+      $nest = $this->_getNestByDateAndSensor($nestdate, $sensorid);
       $data_fields['nest_id'] = $nest->nest_id;
     	$data_fields['report_id'] = $this->_insertReport($data_fields);
     	    
@@ -642,6 +638,7 @@ class Parse extends CI_Model {
       $comm_exists = $this->_commExists($data_fields);
       $comm_exists ? $this->_updateComm($data_fields) : $this->_insertComm($data_fields);     
     }
+    return $data_fields['report_id'];
   }
  
 }		

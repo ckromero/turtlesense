@@ -41,7 +41,16 @@ class Parse extends CI_Model {
         strpos($data_array[0], 'Communicator') !== false ? '' : $fields['file_format_error'] = $this->_setErrorMsg('comm',$fields);
         preg_match('/^\w-\w{2}\d{4}/', $data_array[1]) ? $fields['comm_id'] = $data_array[1] : $this->_setErrorMsg('comm',$fields);
         preg_match('/^\w-/', $data_array[1], $match);
-        ($match[0] == 'H-') ? $fields['comm_type'] = 'handheld' : $this->_setErrorMsg('commtype',$fields);
+        switch ($match[0]) {
+          case 'C-':
+            $fields['comm_type'] = 'tower';
+            break;    
+          case 'H-':
+            $fields['comm_type'] = 'handheld';         
+            break;          
+          default:
+            $this->_setErrorMsg('commtype',$fields);  
+        }
         break;
         
         case 3:
@@ -68,7 +77,6 @@ class Parse extends CI_Model {
   function parse_NestReport($array = array())
   {
     $fields = array();
-
 
 //echo '<pre>';print_r($array);
     
@@ -105,7 +113,16 @@ class Parse extends CI_Model {
         strpos($data_array[0], 'Comm ID') !== false ? '' : $this->_setErrorMsg('comm',$fields);
         preg_match('/^\w{1}\-\w{2}\d{4}/', $data_array[1]) ? $fields['comm_id'] = $data_array[1] : $this->_setErrorMsg('comm',$fields); 
         preg_match('/^\w-/', $data_array[1], $match);
-        ($match[0] == 'C-') ? $fields['comm_type'] = 'tower' : $this->_setErrorMsg('commtype',$fields);
+        switch ($match[0]) {
+          case 'C-':
+            $fields['comm_type'] = 'tower';
+            break;    
+          case 'H-':
+            $fields['comm_type'] = 'handheld';         
+            break;          
+          default:
+            $this->_setErrorMsg('commtype',$fields);  
+        }
         break;
         
         case 4:
@@ -148,14 +165,14 @@ class Parse extends CI_Model {
         //  [8]=> string(18) "Secs per rec: 0168" 
         strpos($value, ':') !== false ? $data_array = explode(": ", $value) : $this->_setErrorMsg('secsperrec',$fields);              
         strpos($data_array[0], 'Secs per rec') !== false ? '' : $this->_setErrorMsg('secsperrec',$fields); 
-        preg_match('/^[0-9A-F]{4}/', $data_array[1]) ? $fields['seconds_per_record'] = $data_array[1] : $this->_setErrorMsg('secsperrec',$fields);  
+        preg_match('/^[0-9A-F]{4}/', $data_array[1]) ? $fields['secs_per_rec'] = hexdec($data_array[1]) : $this->_setErrorMsg('secsperrec',$fields);  
         break;
         
         case 9:
         //  [9]=> string(15) "# of recs: 0014"  
         strpos($value, ':') !== false ? $data_array = explode(": ", $value) : $this->_setErrorMsg('numrecs',$fields);               
         strpos($data_array[0], '# of recs') !== false ? '' : $this->_setErrorMsg('numrecs',$fields); 
-        preg_match('/^[0-9A-F]{4}/', $data_array[1]) ? $fields['num_records'] = $data_array[1] : $this->_setErrorMsg('numrecs',$fields); 
+        preg_match('/^[0-9A-F]{4}/', $data_array[1]) ? $fields['num_records'] = hexdec($data_array[1]) : $this->_setErrorMsg('numrecs',$fields); 
         break;
         
         case 10:
@@ -191,23 +208,23 @@ class Parse extends CI_Model {
        
          if (count($report_array) == 17 ) {
            
-          preg_match('/^[0-9A-F]{4}/', $report_array[0]) ? $fields['record_num'] = $report_array[0] : $fields['file_format_error'] = "Record value for record num failed pattern match.";
-          preg_match('/^[0-9A-F]{4}/', $report_array[1]) ? $fields['temperature'] = $report_array[1] : $fields['file_format_error'] = "Record value for temperature failed pattern match.";
-          preg_match('/^[0-9A-F]{4}/', $report_array[2]) ? $fields['x'] = $report_array[2] : $fields['file_format_error'] = "Record value for X failed pattern match.";
-          preg_match('/^[0-9A-F]{4}/', $report_array[3]) ? $fields['y'] = $report_array[3] : $fields['file_format_error'] = "Record value for Y failed pattern match.";
-          preg_match('/^[0-9A-F]{4}/', $report_array[4]) ? $fields['z'] = $report_array[4] : $fields['file_format_error'] = "Record value for Z failed pattern match.";
-          preg_match('/^[0-9A-F]{4}/', $report_array[5]) ? $fields['cnt'] = $report_array[5] : $fields['file_format_error'] = "Record value for CNT failed pattern match.";
-          preg_match('/^[0-9A-F]{4}/', $report_array[6]) ? $fields['max'] = $report_array[6] : $fields['file_format_error'] = "Record value for MAX failed pattern match.";
-          preg_match('/^[0-9A-F]{4}/', $report_array[7]) ? $fields['bin_a'] = $report_array[7] : $fields['file_format_error'] = "Record value for BIN A failed pattern match.";
-          preg_match('/^[0-9A-F]{4}/', $report_array[8]) ? $fields['bin_b'] = $report_array[8] : $fields['file_format_error'] = "Record value for BIN B failed pattern match.";
-          preg_match('/^[0-9A-F]{4}/', $report_array[9]) ? $fields['bin_c'] = $report_array[9] : $fields['file_format_error'] = "Record value for BIN C failed pattern match.";
-          preg_match('/^[0-9A-F]{4}/', $report_array[10]) ? $fields['bin_d'] = $report_array[10] : $fields['file_format_error'] = "Record value for BIN D failed pattern match.";
-          preg_match('/^[0-9A-F]{4}/', $report_array[11]) ? $fields['bin_e'] = $report_array[11] : $fields['file_format_error'] = "Record value for BIN E failed pattern match.";
-          preg_match('/^[0-9A-F]{4}/', $report_array[12]) ? $fields['bin_f'] = $report_array[12] : $fields['file_format_error'] = "Record value for BIN F failed pattern match.";
-          preg_match('/^[0-9A-F]{4}/', $report_array[13]) ? $fields['bin_g'] = $report_array[13] : $fields['file_format_error'] = "Record value for BIN G failed pattern match.";
-          preg_match('/^[0-9A-F]{4}/', $report_array[14]) ? $fields['bin_h'] = $report_array[14] : $fields['file_format_error'] = "Record value for BIN H failed pattern match.";
-          preg_match('/^[0-9A-F]{4}/', $report_array[15]) ? $fields['bin_i'] = $report_array[15] : $fields['file_format_error'] = "Record value for BIN I failed pattern match.";
-          preg_match('/^[0-9A-F]{4}/', $report_array[16]) ? $fields['bin_j'] = $report_array[16] : $fields['file_format_error'] = "Record value for BIN J failed pattern match.";
+          preg_match('/^[0-9A-F]{4}/', $report_array[0]) ? $fields['record_num'] = hexdec($report_array[0]) : $fields['file_format_error'] = "Record value for record num failed pattern match.";
+          preg_match('/^[0-9A-F]{4}/', $report_array[1]) ? $fields['temperature'] = hexdec($report_array[1]) : $fields['file_format_error'] = "Record value for temperature failed pattern match.";
+          preg_match('/^[0-9A-F]{4}/', $report_array[2]) ? $fields['vforce_x'] = hexdec($report_array[2]) : $fields['file_format_error'] = "Record value for X failed pattern match.";
+          preg_match('/^[0-9A-F]{4}/', $report_array[3]) ? $fields['vforce_y'] = hexdec($report_array[3]) : $fields['file_format_error'] = "Record value for Y failed pattern match.";
+          preg_match('/^[0-9A-F]{4}/', $report_array[4]) ? $fields['vforce_z'] = hexdec($report_array[4]) : $fields['file_format_error'] = "Record value for Z failed pattern match.";
+          preg_match('/^[0-9A-F]{4}/', $report_array[5]) ? $fields['num_readings'] = hexdec($report_array[5]) : $fields['file_format_error'] = "Record value for CNT failed pattern match.";
+          preg_match('/^[0-9A-F]{4}/', $report_array[6]) ? $fields['max_readings'] = hexdec($report_array[6]) : $fields['file_format_error'] = "Record value for MAX failed pattern match.";
+          preg_match('/^[0-9A-F]{4}/', $report_array[7]) ? $fields['bin_a'] = hexdec($report_array[7]) : $fields['file_format_error'] = "Record value for BIN A failed pattern match.";
+          preg_match('/^[0-9A-F]{4}/', $report_array[8]) ? $fields['bin_b'] = hexdec($report_array[8]) : $fields['file_format_error'] = "Record value for BIN B failed pattern match.";
+          preg_match('/^[0-9A-F]{4}/', $report_array[9]) ? $fields['bin_c'] = hexdec($report_array[9]) : $fields['file_format_error'] = "Record value for BIN C failed pattern match.";
+          preg_match('/^[0-9A-F]{4}/', $report_array[10]) ? $fields['bin_d'] = hexdec($report_array[10]) : $fields['file_format_error'] = "Record value for BIN D failed pattern match.";
+          preg_match('/^[0-9A-F]{4}/', $report_array[11]) ? $fields['bin_e'] = hexdec($report_array[11]) : $fields['file_format_error'] = "Record value for BIN E failed pattern match.";
+          preg_match('/^[0-9A-F]{4}/', $report_array[12]) ? $fields['bin_f'] = hexdec($report_array[12]) : $fields['file_format_error'] = "Record value for BIN F failed pattern match.";
+          preg_match('/^[0-9A-F]{4}/', $report_array[13]) ? $fields['bin_g'] = hexdec($report_array[13]) : $fields['file_format_error'] = "Record value for BIN G failed pattern match.";
+          preg_match('/^[0-9A-F]{4}/', $report_array[14]) ? $fields['bin_h'] = hexdec($report_array[14]) : $fields['file_format_error'] = "Record value for BIN H failed pattern match.";
+          preg_match('/^[0-9A-F]{4}/', $report_array[15]) ? $fields['bin_i'] = hexdec($report_array[15]) : $fields['file_format_error'] = "Record value for BIN I failed pattern match.";
+          preg_match('/^[0-9A-F]{4}/', $report_array[16]) ? $fields['bin_j'] = hexdec($report_array[16]) : $fields['file_format_error'] = "Record value for BIN J failed pattern match.";
          
           $reports[$label] = $fields;       
         } 
@@ -257,6 +274,14 @@ class Parse extends CI_Model {
 		return $result;
 	}
 			
+	function getReportById($reportid)
+	{
+		$this->db->where('report_id', $reportid);		
+		$query = $this->db->get('REPORTS');
+		$result = $query->row();		
+		return $result;
+	}
+	
 	function _getNestByDateAndSensor($nestdate, $sensorid) 
 	{	
 		$this->db->where('nest_date', $nestdate);		
@@ -266,7 +291,6 @@ class Parse extends CI_Model {
 		return $result;
 	}
 			
- 
   // INSERTS
   
   function insertNest($data_fields)
@@ -288,10 +312,16 @@ class Parse extends CI_Model {
     $report['days_active']   = $data_fields['days_active'];
     $report['report_number']  = $data_fields['report_number'];
     $report['report_starttime'] = $data_fields['report_starttime'];
-    $report['seconds_per_record'] = $data_fields['seconds_per_record'];
+    $report['report_datetime'] = $data_fields['report_datetime'];
+    $report['secs_per_rec'] = $data_fields['secs_per_rec'];
     $report['num_records'] = $data_fields['num_records'];
 
     return $this->_doInsertAutoId('REPORTS', $report);		
+  }
+  
+  function _insertRecord($data_fields)
+  {
+    return $this->_doInsertAutoId('RECORDS', $data_fields);		
   }
   
   function _insertEvent($data_fields)
@@ -436,7 +466,7 @@ class Parse extends CI_Model {
     return FALSE;   
   }
 
-  function _reportExists($data_fields)
+  function reportExists($data_fields)
   {
     $reportFilenameId = $data_fields['report_filename_id'];
 
@@ -577,21 +607,21 @@ class Parse extends CI_Model {
   
   function dba_nestRegistration($data_fields)
   {
-    $nest_exists = $this->_nestExists($data_fields);       
-    if ($nest_exists) {
+    $nestexists = $this->_nestExists($data_fields);       
+    if ($nestexists) {
       
-      $data_fields['nest_id'] = $nest_exists;
+      $data_fields['nest_id'] = $nestexists;
       
     	$this->_updateNest($data_fields);    	  	
       $this->_insertEvent($data_fields);  
       $this->_updateSensor($data_fields);
 
-      $comm_exists = $this->_commExists($data_fields);            	
-    	if ($comm_exists) {   
+      $commexists = $this->_commExists($data_fields);            	
+    	if ($commexists) {   
     		$this->_updateComm($data_fields);    
     	} 
     	else {
-    		$this->__insertComm($data_fields);     
+    		$this->_insertComm($data_fields);     
       }
     } 
     else { //nest does not exist
@@ -607,39 +637,50 @@ class Parse extends CI_Model {
     	$data_fields['nest_id'] = $this->insertNest($data_fields);
     	$this->_insertEvent($data_fields);
     
-      $sensor_exists = $this->_sensorExists($data_fields);
-      $sensor_exists ? $this->_updateSensor($data_fields) : $this->_insertSensor($data_fields);
+      $sensorexists = $this->_sensorExists($data_fields);
+      $sensorexists ? $this->_updateSensor($data_fields) : $this->_insertSensor($data_fields);
 
-      $comm_exists = $this->_commExists($data_fields);
-      $comm_exists ? $this->_updateComm($data_fields) : $this->_insertComm($data_fields);     
+      $commexists = $this->_commExists($data_fields);
+      $commexists ? $this->_updateComm($data_fields) : $this->_insertComm($data_fields);     
     }
   }
    
   function dba_nestReport($data_fields)
   {
     $data_fields['report_id'] = 0;
-    $report_exists = $this->_reportExists($data_fields);   
+    $reportexists = $this->reportExists($data_fields);   
 
-    if ($report_exists) {
+    if ($reportexists) {
 
-      $data_fields['report_id'] = $report_exists;
+      $data_fields['report_id'] = $reportexists;
     } 
     else { //report does not exist. insert report
     
       $nestdate = $data_fields['nest_date'];
       $sensorid = $data_fields['sensor_id'];    
-      $nest = $this->_getNestByDateAndSensor($nestdate, $sensorid);
-      $data_fields['nest_id'] = $nest->nest_id;
+      $nest     = $this->_getNestByDateAndSensor($nestdate, $sensorid);
+      $nestid   = $nest ? $nest->nest_id : 0;
+      $data_fields['nest_id'] = $nestid;
+      
+//echo "<pre>"; print_r($data_fields); exit;
+
     	$data_fields['report_id'] = $this->_insertReport($data_fields);
     	    
-      $sensor_exists = $this->_sensorExists($data_fields);
-      $sensor_exists ? $this->_updateSensor($data_fields) : $this->_insertSensor($data_fields);
+      $sensorexists = $this->_sensorExists($data_fields);
+      $sensorexists ? $this->_updateSensor($data_fields) : $this->_insertSensor($data_fields);
 
-      $comm_exists = $this->_commExists($data_fields);
-      $comm_exists ? $this->_updateComm($data_fields) : $this->_insertComm($data_fields);     
+      $commexists = $this->_commExists($data_fields);
+      $commexists ? $this->_updateComm($data_fields) : $this->_insertComm($data_fields);     
     }
     return $data_fields['report_id'];
   }
+
+  function dba_nestRecord($data_fields)
+  {
+    $this->_insertRecord($data_fields);   
+  }
+
+
  
 }		
 /* EOF */

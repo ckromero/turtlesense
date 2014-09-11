@@ -8,6 +8,30 @@ class Log extends CI_Model {
 		$this->load->helper('file');
 	}			
 	
+  function logSuccess($data_fields)
+  {    
+    $msg = strtoupper($data_fields['event_type']).': '.$data_fields['sensor_id'].' - '.$data_fields['event_datetime']. '. Loaded to the database.';
+    $this->_writeToApplicationLog($msg);	
+    echo $msg.'<br>';
+  }
+
+  function logDuplicateEvent($data_fields)
+  {    
+    $msg = 'DUPLICATE: '.$data_fields['sensor_id'].' - '.$data_fields['event_datetime']. '. Entry skipped.';
+    $this->_writeToApplicationLog($msg);
+    echo $msg.'<br>';
+  }
+
+  function logFailure($data_fields)
+  {      
+    $filename = basename($data_fields['file_name']);
+    if (isset($data_fields['file_format_error'])) {   
+      $msg = 'ERROR - '.$data_fields['file_format_error']. ' Filename: '.$filename .'. Aborting process.';
+      $this->_writeToApplicationLog($msg);	
+      echo $msg.'<br>';
+    }
+  }
+  
 	function read_lastparse_filemtime() 
 	{
 		$filepath = $this->config->item('logs_parser_dir').'/.lastparse_filemtime';
@@ -21,18 +45,14 @@ class Log extends CI_Model {
     return TRUE;
 	}
 					
-	function writeToApplicationLog($msg='') 
+	function _writeToApplicationLog($msg='') 
 	{
-		$filepath = $this->config->item('logs_parser_dir').'/'.date('Y-m-d').'.php';
-				
+		$filepath = $this->config->item('logs_parser_dir').'/'.date('Y-m-d').'.php';				
 		$message  = '';
-
-		if ( ! file_exists($filepath))
-		{
+		if ( ! file_exists($filepath)) {
 			$message .= "<"."?php  if ( ! defined('BASEPATH')) exit('No direct script access allowed'); ?".">\n\n";
 		}
-		if ( ! $fp = @fopen($filepath, FOPEN_WRITE_CREATE))
-		{
+		if ( ! $fp = @fopen($filepath, FOPEN_WRITE_CREATE)) {
 			return FALSE;
 		}
 		$message .= "\n".date('Y-m-d H:i:s')."\n".$msg."\n";
@@ -46,33 +66,7 @@ class Log extends CI_Model {
 		return TRUE;
 	}
 								
-  function logSuccess($data_fields)
-  {    
-    $msg = strtoupper($data_fields['event_type']).': '.$data_fields['sensor_id'].' - '.$data_fields['event_datetime']. '. Loaded to the database.';
-    $this->writeToApplicationLog($msg);	
-    echo $msg.'<br>';
-  }
-
-  function logDuplicateEvent($data_fields)
-  {    
-    $msg = 'DUPLICATE: '.$data_fields['sensor_id'].' - '.$data_fields['event_datetime']. '. Entry skipped.';
-    $this->writeToApplicationLog($msg);
-    echo $msg.'<br>';
-  }
-
-  function logFailure($data_fields)
-  {      
-    $filename = basename($data_fields['file_name']);
-
-    if (isset($data_fields['file_format_error'])) {
-    
-      $msg = 'ERROR - '.$data_fields['file_format_error']. ' Filename: '.$filename .'. Aborting process.';
-      $this->writeToApplicationLog($msg);	
-      echo $msg.'<br>';
-    }
-    // send me email once a day! using a cookie
-  }
-  					
+ 					
 }		
 /* EOF */
 
